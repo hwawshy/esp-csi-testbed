@@ -1,0 +1,14 @@
+ap/cmake-build-debug
+ap/build
+ap/sdkconfig
+ap/sdkconfig.old
+ap/.idea
+
+station/cmake-build-debug
+station/build
+station/sdkconfig
+station/sdkconfig.old
+station/.idea
+
+python_utils/__pycache__
+
