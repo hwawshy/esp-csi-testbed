@@ -75,6 +75,7 @@ void wifi_init_sta(void) {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_internal_set_fix_rate(WIFI_IF_STA, 1, WIFI_PHY_RATE_MCS0_LGI));
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
 

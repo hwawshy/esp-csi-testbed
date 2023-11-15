@@ -21,6 +21,7 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_netif.h"
+#include "esp_private/wifi.h"
 //#include "esp_now.h"
 
 #include "lwip/inet.h"
@@ -203,7 +204,6 @@ static void csi_task(void *pvParameters)
         }
 
         while (1) {
-            printf("into the loop");
 
             addr_len = sizeof their_addr;
             if ((numbytes = recvfrom(socket_fd, buf, UDP_BUFF_LEN-1 , 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) {
@@ -211,8 +211,6 @@ static void csi_task(void *pvParameters)
                 printf("ERROR: recvfrom error [%s]\n", strerror(errno));
                 break;
             }
-
-            printf("received some shit");
 
             static_wifi_csi_info_t csi_info;
 

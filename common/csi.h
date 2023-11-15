@@ -72,31 +72,46 @@ int csi_to_json(static_wifi_csi_info_t *csi_info, char *buff_json, int len_buff_
             csi_info->x.rx_ctrl.rx_state);
 
     const enum {NONE, ABOVE, BELOW} sec_chan = csi_info->x.rx_ctrl.secondary_channel;
-    const bool is_ht   = csi_info->x.rx_ctrl.sig_mode;
-    const int chan_bw  = csi_info->x.rx_ctrl.cwb == 0 ? 20 : 40;
-    const bool is_stbc = csi_info->x.rx_ctrl.stbc;
 
-    int8_t buff_csi[300];
+    int8_t buff_csi[128]; // only LLTF
 
-    if(csi_info->buf[0] != 0) {
-        ESP_LOGI(TAG, "json - non-zero guardband at t=%d", csi_info->x.rx_ctrl.timestamp);
+    size_t len_csi = 0;
+    int csi_first_ind = 0;
+
+    // shift sub-carriers depending on secondary channel
+    if(sec_chan == NONE) { // none
+        memcpy(buff_csi + len_csi, csi_info->buf + 64, 64); len_csi += 64;
+        memcpy(buff_csi + len_csi, csi_info->buf + 0, 64);  len_csi += 64;
+        csi_first_ind = -32;
+    } else if(sec_chan == BELOW) { // below
+        memcpy(buff_csi + len_csi, csi_info->buf + 0, 128); len_csi += 128;
+        csi_first_ind = 0;
+    } else if(sec_chan == ABOVE) { // above
+        memcpy(buff_csi + len_csi, csi_info->buf + 0, 128); len_csi += 128;
+        csi_first_ind = -64;
     }
 
-    // raw CSI
+    size_t offset_csi = 0;
+    if(csi_info->x.first_word_invalid) {
+        ESP_LOGI(TAG, "invalid CSI data, skipping first 4 bytes");
+        offset_csi    += 4;
+        len_csi       -= 4;
+        csi_first_ind += 2;
+    }
 
     // convert CSI buffer to base64 string and store in JSON buffer
     buff_printf(",\"csi_raw\": \"");
 
     size_t len_b64;
-    retval = mbedtls_base64_encode((unsigned char *)(buff_json + len_json), len_buff_json - len_json, &len_b64, (const unsigned char *)csi_info->buf, csi_info->len);
+    retval = mbedtls_base64_encode((unsigned char *)(buff_json + len_json), len_buff_json - len_json, &len_b64, (const unsigned char *)(buff_csi + offset_csi), len_csi);
     if(retval != 0) {
         ESP_LOGE(TAG, "base64 error");
         return retval;
     }
     len_json += len_b64;
 
-    buff_printf("\"");
-
+    buff_printf("\",\"sc_ind_start\": %d,", csi_first_ind);
+    buff_printf("\"csi_len\": %d", len_csi);
 
     buff_printf("}\n");
 
