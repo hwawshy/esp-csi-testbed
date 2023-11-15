@@ -37,6 +37,7 @@
 #define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
 #define EXAMPLE_ESP_WIFI_CHANNEL   CONFIG_ESP_WIFI_CHANNEL
 #define EXAMPLE_MAX_STA_CONN       CONFIG_ESP_MAX_STA_CONN
+#define EXAMPLE_DB_HOST_MAC        CONFIG_DB_HOST_MAC
 
 #define UDP_PORT 4950
 #define UDP_PORT_HOST 4951
@@ -50,7 +51,18 @@ static int connected_stations()
     wifi_sta_list_t list;
     esp_wifi_ap_get_sta_list(&list);
 
-    return list.num;
+    for (int i = 0; i < list.num; i++) {
+        char sta_mac[20] = {0};
+        sprintf(sta_mac, MACSTR, MAC2STR(list.sta[i].mac));
+
+        if (strcasecmp(sta_mac, CONFIG_DB_HOST_MAC)) {
+            continue;
+        }
+
+        return list.num > 1 ? 1 : 0;
+    }
+
+    return 0;
 }
 
 static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
@@ -63,9 +75,33 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
     char src_mac[20] = {0};
     sprintf(src_mac, MACSTR, MAC2STR(info->mac));
 
-    if (strcmp(src_mac, "c8:f0:9e:50:7b:c0")) {
+    wifi_sta_list_t list;
+    esp_wifi_ap_get_sta_list(&list);
+
+    uint8_t store_csi = 0;
+
+    for (int i = 0; i < list.num; i++) {
+        char sta_mac[20] = {0};
+        sprintf(sta_mac, MACSTR, MAC2STR(list.sta[i].mac));
+
+        if (strcasecmp(sta_mac, src_mac)) {
+            continue;
+        }
+
+        if (!strcasecmp(sta_mac, CONFIG_DB_HOST_MAC)) {
+            continue;
+        }
+
+        store_csi = 1;
+    }
+
+    if (!store_csi) {
         return;
     }
+
+//    if (strcmp(src_mac, "c8:f0:9e:4d:0e:cc") && strcmp(src_mac, "c8:f0:9e:50:7b:c0")) {
+//        return;
+//    }
 
     static uint32_t s_count = 0;
     const wifi_pkt_rx_ctrl_t *rx_ctrl = &info->rx_ctrl;
@@ -173,10 +209,10 @@ void wifi_init_softap(void)
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-//    ESP_ERROR_CHECK(esp_wifi_set_protocol(WIFI_IF_AP, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N));
-//    ESP_ERROR_CHECK(esp_wifi_config_11b_rate(WIFI_IF_AP, true));
+    //ESP_ERROR_CHECK(esp_wifi_set_protocol(WIFI_IF_AP, WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N));
+    //ESP_ERROR_CHECK(esp_wifi_config_11b_rate(WIFI_IF_AP, true));
     ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(esp_wifi_internal_set_fix_rate(WIFI_IF_AP, 1, WIFI_PHY_RATE_MCS7_SGI));
+    ESP_ERROR_CHECK(esp_wifi_internal_set_fix_rate(WIFI_IF_AP, 1, WIFI_PHY_RATE_MCS0_LGI));
 
     esp_wifi_set_ps(WIFI_PS_NONE);
 
@@ -218,7 +254,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
             abort();
         }
 
-        while (connected_stations() < 2) {
+        while (!connected_stations()) {
             // wait until a station connects
             printf("no stations connected, waiting...\n");
             vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -242,12 +278,12 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
         uint8_t dnode[6];
         ESP_ERROR_CHECK(esp_read_mac(dnode, ESP_MAC_WIFI_SOFTAP));
 
-        printf("sending multicast frames.\n");
+        ESP_LOGI(TAG, "sending multicast frames.");
         // double lag = 0.0;
         while (1) {
             printf("checking connected stations....\n");
             // double start_time = get_steady_clock_timestamp();
-            if (connected_stations() < 2) {
+            if (!connected_stations()) {
                 printf("ERROR: no connected stations\n");
                 break;
             }
@@ -261,8 +297,8 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 
             static_wifi_csi_info_t csi_info;
 
-            printf("start receiving from queue\n");
             while (xQueueReceive(queue, &csi_info, ( TickType_t ) 0)) {
+                printf("received something from the queue\n");
                 char buff_json[3000] = {0};
                 int len_json = csi_to_json(&csi_info, (char *)buff_json, sizeof(buff_json), &dnode);
 
@@ -271,6 +307,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 
                 int to_send = len_json, sent = 0;
                 while (to_send > 0) {
+                    printf("sending to db host\n");
                     if ((sent = sendto(socket_fd_host, buff_json + sent, to_send, 0, (const struct sockaddr *) &host_addr, sizeof(host_addr))) == -1) {
                         ESP_LOGE(TAG, "sendto: %d %s", socket_fd_host, strerror(errno));
                         abort();
@@ -287,7 +324,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 //            int w = floor(wait_duration);
 //            vTaskDelay(w);
 //#else
-            vTaskDelay(10); // This limits TX to approximately 100 per second.
+            vTaskDelay(5); // This limits TX to approximately 100 per second.
 //#endif
             // double end_time = get_steady_clock_timestamp();
             // lag = end_time - start_time;

@@ -8,7 +8,7 @@ menu "Example Configuration"
 
     config ESP_WIFI_PASSWORD
         string "WiFi Password"
-        default "mypassword"
+        default ""
         help
             WiFi password (WPA or WPA2) for the example to use.
     config ESP_WIFI_CHANNEL
@@ -23,4 +23,10 @@ menu "Example Configuration"
         default 4
         help
             Max number of the STA connects to AP.
+
+    config DB_HOST_MAC
+        string "DB MAC Address"
+        default "94:e2:3c:46:ff:78"
+        help
+            MAC address of the database host.
 endmenu
