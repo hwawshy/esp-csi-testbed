@@ -11,3 +11,7 @@ There are three main actors:
 The following sequence diagram demonstrates the workflow
 
 ![Sequence Diagram](CSI-workflow.svg)
+
+## Acknowledgement
+
+This project uses parts of [esp32-csi-server](https://github.com/roger-/esp32-csi-server) and [ESP32-CSI-Tool](https://github.com/StevenMHernandez/ESP32-CSI-Tool) in addition to the example on the [official ESP-IDF repo](https://github.com/espressif/esp-idf).
