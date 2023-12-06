@@ -7,8 +7,8 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-#define EXAMPLE_ESP_WIFI_SSID      CONFIG_EXAMPLE_WIFI_SSID
-#define EXAMPLE_ESP_WIFI_PASS      CONFIG_EXAMPLE_WIFI_PASSWORD
+#define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
+#define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
 #define EXAMPLE_ESP_MAXIMUM_RETRY  5
 
 extern const char *TAG;
@@ -78,6 +78,10 @@ void wifi_init_sta(void) {
     ESP_ERROR_CHECK(esp_wifi_internal_set_fix_rate(WIFI_IF_STA, 1, WIFI_PHY_RATE_MCS0_LGI));
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
+
+    int8_t power = 0;
+    esp_wifi_get_max_tx_power(&power);
+    ESP_LOGI(TAG, "Max TX Power: %d", power);
 
     /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
      * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */

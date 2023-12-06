@@ -11,24 +11,6 @@ menu "Example Configuration"
         default ""
         help
             WiFi password (WPA or WPA2) for the example to use.
-    config ESP_WIFI_CHANNEL
-        int "WiFi Channel"
-        range 1 13
-        default 6
-        help
-            WiFi channel (network channel) for the example to use.
-
-    config ESP_MAX_STA_CONN
-        int "Maximal STA connections"
-        default 15
-        help
-            Max number of the STA connects to AP.
-
-    config DB_HOST_MAC
-        string "DB MAC Address"
-        default "94:e2:3c:46:ff:78"
-        help
-            MAC address of the database host.
 
     config DB_HOST_IP
         string "DB IP Address"

@@ -38,6 +38,7 @@
 #define EXAMPLE_ESP_WIFI_CHANNEL   CONFIG_ESP_WIFI_CHANNEL
 #define EXAMPLE_MAX_STA_CONN       CONFIG_ESP_MAX_STA_CONN
 #define EXAMPLE_DB_HOST_MAC        CONFIG_DB_HOST_MAC
+#define EXAMPLE_DB_HOST_IP         CONFIG_DB_HOST_IP
 
 #define UDP_PORT 4950
 #define UDP_PORT_HOST 4951
@@ -55,7 +56,7 @@ static int connected_stations()
         char sta_mac[20] = {0};
         sprintf(sta_mac, MACSTR, MAC2STR(list.sta[i].mac));
 
-        if (strcasecmp(sta_mac, CONFIG_DB_HOST_MAC)) {
+        if (strcasecmp(sta_mac, EXAMPLE_DB_HOST_MAC)) {
             continue;
         }
 
@@ -88,7 +89,7 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
             continue;
         }
 
-        if (!strcasecmp(sta_mac, CONFIG_DB_HOST_MAC)) {
+        if (!strcasecmp(sta_mac, EXAMPLE_DB_HOST_MAC)) {
             continue;
         }
 
@@ -241,9 +242,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
         host_addr.sin_family = AF_INET;
         host_addr.sin_port = htons(UDP_PORT_HOST);
 
-        char *ip_host = (char *) "192.168.4.11";
-
-        if (inet_aton(ip_host, &host_addr.sin_addr) == 0) {
+        if (inet_aton(EXAMPLE_DB_HOST_IP, &host_addr.sin_addr) == 0) {
             printf("ERROR: inet_aton\n");
             abort();
         }
@@ -268,10 +267,6 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
         socket_fd = socket(PF_INET, SOCK_DGRAM, 0);
         if (socket_fd == -1) {
             printf("ERROR: Socket creation error [%s]\n", strerror(errno));
-            continue;
-        }
-        if (connect(socket_fd, (const struct sockaddr *) &caddr, sizeof(struct sockaddr)) == -1) {
-            printf("ERROR: socket connection error [%s]\n", strerror(errno));
             continue;
         }
 
@@ -299,21 +294,22 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 
             while (xQueueReceive(queue, &csi_info, ( TickType_t ) 0)) {
                 printf("received something from the queue\n");
-                char buff_json[3000] = {0};
+                char buff_json[800] = {0};
                 int len_json = csi_to_json(&csi_info, (char *)buff_json, sizeof(buff_json), &dnode);
 
                 if(len_json < 0)
                     continue;
 
-                int to_send = len_json, sent = 0;
-                while (to_send > 0) {
+                int to_send = len_json, sent = 0, retires = 0;
+                while (to_send > 0 && retires < 5) {
                     printf("sending to db host\n");
                     if ((sent = sendto(socket_fd_host, buff_json + sent, to_send, 0, (const struct sockaddr *) &host_addr, sizeof(host_addr))) == -1) {
                         ESP_LOGE(TAG, "sendto: %d %s", socket_fd_host, strerror(errno));
-                        abort();
+                        retires++;
+                        //abort();
+                    } else {
+                        to_send -= sent;
                     }
-
-                    to_send -= sent;
                 }
 
                 printf("\n%s\n", buff_json);
@@ -324,7 +320,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 //            int w = floor(wait_duration);
 //            vTaskDelay(w);
 //#else
-            vTaskDelay(5); // This limits TX to approximately 100 per second.
+            vTaskDelay(1);
 //#endif
             // double end_time = get_steady_clock_timestamp();
             // lag = end_time - start_time;
@@ -345,7 +341,7 @@ void app_main(void)
     ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
     wifi_init_softap();
     wifi_csi_init();
-    //xTaskCreatePinnedToCore(socket_transmitter_sta_loop, "socket_transmitter_sta_loop", 10000, (void *) &connected_stations, 100, NULL, 1);
+    //xTaskCreatePinnedToCore(socket_transmitter_sta_loop, "socket_transmitter_sta_loop", 10000, (void *) &connected_stations, 5, NULL, 0);
     //xTaskCreate(csi_task, "csi_task", 10000, NULL, 6, NULL);
     xTaskCreate(socket_transmitter_sta_loop, "socket_transmitter_sta_loop", 10000, (void *) &connected_stations, 5, NULL);
 }

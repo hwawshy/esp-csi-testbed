@@ -32,9 +32,8 @@
 #include "wifi.h"
 #include "../../common/csi.h"
 
-//#include "protocol_examples_common.h"
-
 #define CONFIG_SEND_FREQUENCY      100
+#define EXAMPLE_DB_HOST_IP         CONFIG_DB_HOST_IP
 
 #define UDP_PORT 4950
 #define UDP_PORT_HOST 4951
@@ -124,6 +123,7 @@ static void wifi_csi_init()
     ESP_ERROR_CHECK(esp_wifi_set_csi_config(&csi_config));
     ESP_ERROR_CHECK(esp_wifi_set_csi_rx_cb(wifi_csi_rx_cb, s_ap_info.bssid));
     ESP_ERROR_CHECK(esp_wifi_set_csi(true));
+    printf("secondary channel: %d", s_ap_info.second);
 
 //    printf("11b: %d\n", s_ap_info.phy_11b);
 //    printf("11g: %d\n", s_ap_info.phy_11g);
@@ -160,9 +160,7 @@ static void csi_task(void *pvParameters)
     host_addr.sin_family = AF_INET;
     host_addr.sin_port = htons(UDP_PORT_HOST);
 
-    char *ip_host = (char *) "192.168.4.11";
-
-    if (inet_aton(ip_host, &host_addr.sin_addr) == 0) {
+    if (inet_aton(EXAMPLE_DB_HOST_IP, &host_addr.sin_addr) == 0) {
         printf("ERROR: inet_aton\n");
         abort();
     }
@@ -216,7 +214,7 @@ static void csi_task(void *pvParameters)
 
 
             while (xQueueReceive(queue, &csi_info, ( TickType_t ) 0)) {
-                char buff_json[3000] = {0};
+                char buff_json[800] = {0};
                 int len_json = csi_to_json(&csi_info, (char *)buff_json, sizeof(buff_json), &dnode);
 
                 if(len_json < 0)
@@ -255,14 +253,7 @@ void app_main()
 {
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
-    //ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    /**
-     * @brief This helper function configures Wi-Fi, as selected in menuconfig.
-     *        Read "Establishing Wi-Fi Connection" section in esp-idf/examples/protocols/README.md
-     *        for more information about this function.
-     */
-    //ESP_ERROR_CHECK(example_connect());
     wifi_init_sta();
     wifi_csi_init();
     xTaskCreate(csi_task, "csi_task", 10000, NULL, 5, NULL);

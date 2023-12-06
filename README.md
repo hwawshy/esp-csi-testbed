@@ -1,5 +1,5 @@
 # ESP CSI Testbed
-This project aims to develop a testbed for testing different WiFi sensing applications based on Channel State Information (CSI). It employs the ESP platform for the generation of CSI data and contains a framework for the centralized collection of said data from a number of nodes. This project is currently under active development and not yet ready to be used.
+This project aims to develop a testbed for testing different WiFi sensing applications based on Channel State Information (CSI). It employs the ESP platform for the generation of CSI data and contains a framework for the centralized collection of said data from a number of nodes.
 
 ## Architecture
 
@@ -10,4 +10,4 @@ There are three main actors:
 
 The following sequence diagram demonstrates the workflow
 
-![Sequence Diagram](sd.png)
+![Sequence Diagram](CSI-workflow.svg)
