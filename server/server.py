@@ -73,7 +73,7 @@ def get_secondary_channel(value: int) -> str:
         raise ValueError('Unknown secondary_channel')
 
 
-def create_records_from_raw_data(data_dict: dict) -> list[dict]:
+def create_records_from_raw_data(data_dict: dict):
     imaginary = []
     real = []
     csi_data = data_dict['csi_raw']
