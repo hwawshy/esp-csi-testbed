@@ -10,5 +10,5 @@ station/sdkconfig
 station/sdkconfig.old
 station/.idea
 
-python_utils/__pycache__
+server/__pycache__
 
