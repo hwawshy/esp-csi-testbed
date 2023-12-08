@@ -320,7 +320,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 //            int w = floor(wait_duration);
 //            vTaskDelay(w);
 //#else
-            vTaskDelay(1);
+            vTaskDelay(2);
 //#endif
             // double end_time = get_steady_clock_timestamp();
             // lag = end_time - start_time;
