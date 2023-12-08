@@ -255,7 +255,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
 
         while (!connected_stations()) {
             // wait until a station connects
-            printf("no stations connected, waiting...\n");
+            printf("no stations/server connected, waiting...\n");
             vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
         printf("at least one station is connected\n");
