@@ -306,6 +306,7 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
                     if ((sent = sendto(socket_fd_host, buff_json + sent, to_send, 0, (const struct sockaddr *) &host_addr, sizeof(host_addr))) == -1) {
                         ESP_LOGE(TAG, "sendto: %d %s", socket_fd_host, strerror(errno));
                         retires++;
+                        vTaskDelay(2);
                         //abort();
                     } else {
                         to_send -= sent;
