@@ -9,6 +9,7 @@ static EventGroupHandle_t s_wifi_event_group;
 
 #define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
 #define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
+#define EXAMPLE_AP_BSSID           CONFIG_AP_BSSID
 #define EXAMPLE_ESP_MAXIMUM_RETRY  5
 
 extern const char *TAG;
@@ -66,6 +67,7 @@ void wifi_init_sta(void) {
                     .ssid = EXAMPLE_ESP_WIFI_SSID,
                     .password = EXAMPLE_ESP_WIFI_PASS,
                     .channel = 6,
+                    .bssid = EXAMPLE_AP_BSSID,
                     /* Setting a password implies station will connect to all security modes including WEP/WPA.
                      * However, these modes are deprecated and not advisable to be used. Incase your Access point
                      * doesn't support WPA2, these mode can be enabled by commenting below line */

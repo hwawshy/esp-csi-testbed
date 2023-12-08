@@ -12,6 +12,12 @@ menu "Example Configuration"
         help
             WiFi password (WPA or WPA2) for the example to use.
 
+    config AP_BSSID
+        string "MAC address of AP"
+        default "48:27:e2:3b:33:2d"
+        help
+            MAC address of the AP.
+
     config DB_HOST_IP
         string "DB IP Address"
         default "192.168.4.11"
