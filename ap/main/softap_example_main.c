@@ -253,9 +253,14 @@ void socket_transmitter_sta_loop(int (*connected_stations)()) {
             abort();
         }
 
+        int8_t connection_retires = 0;
         while (!connected_stations()) {
             // wait until a station connects
             printf("no stations/server connected, waiting...\n");
+            connection_retires++;
+            if (connected_stations > 20) {
+                abort();
+            }
             vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
         printf("at least one station is connected\n");

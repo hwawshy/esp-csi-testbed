@@ -176,39 +176,50 @@ except ApiException as e:
 
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-sock_fd = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=0)
-sock_fd.bind((host_ip, host_port))
+while True:
+    try:
+        sock_fd = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=0)
+        sock_fd.bind((host_ip, host_port))
+        break
+    except:
+        print('Failed to create a socket, retrying...')
+        time.sleep(5)
 
 records_list = []
 rates_list = []
 
 while True:
-    data, _ = sock_fd.recvfrom(1024)
-    data = json.loads(data)
-    data['real_timestamp'] = int(time.time())
-    if 'csi_raw' in data:
-        data['csi_raw'] = list(struct.unpack('b' * data['csi_len'], base64.b64decode(data['csi_raw'], validate=True)))
+    try:
+        data, _ = sock_fd.recvfrom(1024)
+        data = json.loads(data)
+        data['real_timestamp'] = int(time.time())
+        if 'csi_raw' in data:
+            data['csi_raw'] = list(struct.unpack('b' * data['csi_len'], base64.b64decode(data['csi_raw'], validate=True)))
 
-    packet_count += 1
-    total_packet_counts += 1
+        packet_count += 1
+        total_packet_counts += 1
 
-    records = create_records_from_raw_data(data)
-    records_list.extend(records)
+        records = create_records_from_raw_data(data)
+        records_list.extend(records)
 
-    if print_stats_wait_timer.check():
-        print_stats_wait_timer.update()
-        print("Packet Count:", packet_count, "per second.", "Total Count:", total_packet_counts)
-        rates_list.append({"measurement": "packet_rate", "time": int(time.time()), "fields": {"rate": packet_count}})
-        packet_count = 0
+        if print_stats_wait_timer.check():
+            print_stats_wait_timer.update()
+            print("Packet Count:", packet_count, "per second.", "Total Count:", total_packet_counts)
+            rates_list.append({"measurement": "packet_rate", "time": int(time.time()), "fields": {"rate": packet_count}})
+            packet_count = 0
 
-    if db_write_wait_timer.check():
-        write_api.write(bucket=bucket, org=org, record=records_list, write_precision=WritePrecision.S)
-        write_api.write(bucket=bucket, org=org, record=rates_list, write_precision=WritePrecision.S)
-        stats = get_udp_stats()
-        if stats:
-            write_api.write(bucket=bucket, org=org, record=stats, write_precision=WritePrecision.S)
-        print(f'Wrote {len(records_list)} records to InfluxDB')
-        records_list = []
-        rates_list = []
-        db_write_wait_timer.update()
+        if db_write_wait_timer.check():
+            write_api.write(bucket=bucket, org=org, record=records_list, write_precision=WritePrecision.S)
+            write_api.write(bucket=bucket, org=org, record=rates_list, write_precision=WritePrecision.S)
+            stats = get_udp_stats()
+            if stats:
+                write_api.write(bucket=bucket, org=org, record=stats, write_precision=WritePrecision.S)
+            print(f'Wrote {len(records_list)} records to InfluxDB')
+            records_list = []
+            rates_list = []
+            db_write_wait_timer.update()
+    except:
+        # just sleep before trying again
+        print('An error occurred, retrying...')
+        time.sleep(5)
 
