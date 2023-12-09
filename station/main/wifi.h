@@ -103,6 +103,7 @@ void wifi_init_sta(void) {
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
                  EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+        abort();
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
