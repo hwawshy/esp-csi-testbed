@@ -7,6 +7,7 @@ import struct
 import subprocess
 import time
 from typing import Optional
+from datetime import datetime
 
 import influxdb_client
 from influxdb_client import WritePrecision
@@ -204,7 +205,7 @@ while True:
 
         if print_stats_wait_timer.check():
             print_stats_wait_timer.update()
-            print("Packet Count:", packet_count, "per second.", "Total Count:", total_packet_counts)
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: Packet Count:", packet_count, "per second.", "Total Count:", total_packet_counts)
             rates_list.append({"measurement": "packet_rate", "time": int(time.time()), "fields": {"rate": packet_count}})
             packet_count = 0
 
@@ -214,7 +215,7 @@ while True:
             stats = get_udp_stats()
             if stats:
                 write_api.write(bucket=bucket, org=org, record=stats, write_precision=WritePrecision.S)
-            print(f'Wrote {len(records_list)} records to InfluxDB')
+            print(f'[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: Wrote {len(records_list)} records to InfluxDB')
             records_list = []
             rates_list = []
             db_write_wait_timer.update()
